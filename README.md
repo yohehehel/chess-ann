@@ -15,7 +15,7 @@ By combining these elements, the project delivers a functional prototype that no
 ## Project Structure
 
 The project is organized with a clear file and directory structure to separate data, code, models, and visuals. Below is an outline of the repository structure and the role of each component:
-`
+```
 chess-outcome-prediction/  
 ├── data/  
 │ └── lichess_games.csv # Dataset of chess games (Lichess format with moves and metadata)  
@@ -28,7 +28,7 @@ chess-outcome-prediction/
 ├── ui/  
 │ └── index.html # (Optional) Local HTML page for an interactive UI to display results  
 └── architecture.md # Architecture documentation (this file)
-`
+```
 - **data/lichess_games.csv:** This is the dataset containing the chess games used for training and testing. Each record includes information about a game: players, their ratings, game metadata, the moves, and the final result. Notably, it contains fields such as **WhiteElo**, **BlackElo** (players' ratings), **WhiteRatingDiff**/**BlackRatingDiff** (rating change after the game), **TimeControl**, **Opening**, **Termination**, and **AN** (Algebraic Notation moves) among others[\[1\]](https://huggingface.co/api/resolve-cache/datasets/Lichess/standard-chess-games/a9be553ea50eeaf58129778d7875ceaca241d935/README.md?download=true&etag=%227486643c201bc6569cf0176d540d01c426410465%22#:~:text=features%3A%20,lichess). The moves are recorded in standard algebraic notation (movetext PGN format) and the result is given as "1-0", "0-1", or "1/2-1/2" (denoting White win, Black win, or draw respectively).
 - **ChessOutcomePrediction.ipynb:** This is the core Jupyter Notebook that holds the entire code. It is structured into sequential sections (cells) for each stage of the pipeline: data loading, preprocessing, model building, training, evaluation, and visualization. Using a single notebook makes it easier to run the whole project step by step and see outputs (graphs, predictions) inline. The notebook contains defined helper functions (for example, to parse moves or display boards) and uses markdown headings to separate logical sections. We detail the contents and flow of this notebook in the next sections.
 - **models/best_model.h5:** After training, the best-performing model (in terms of validation accuracy) can be saved here. This file stores the model architecture and weights so that the trained ANN can be re-loaded later without retraining. (This is optional; the notebook will also allow running predictions immediately after training without needing to save, but saving is good practice for persistence.)
