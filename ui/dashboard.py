@@ -11,7 +11,9 @@ import chess.svg
 import pickle
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import threading
+from queue import Queue
 
 # Reduce TF thread contention and enable cleaner terminal logs
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -166,8 +168,48 @@ with tab_run:
                     tf_config.set_visible_devices([], 'GPU')
                 except Exception:
                     pass
-                from tensorflow.python.client import device_lib  # type: ignore
-                print(f"[TF] Devices: {[d.name for d in device_lib.list_local_devices()]}", flush=True)
+
+                def _safe_list_tf_devices(timeout: float = 5.0) -> Optional[List[str]]:
+                    """List TensorFlow devices without risking a hard hang.
+
+                    On some macOS/Metal setups, `list_local_devices` can block indefinitely
+                    which would freeze the Streamlit pipeline run. We execute the call in a
+                    daemon thread and skip reporting if it exceeds a short timeout.
+                    """
+
+                    try:
+                        from tensorflow.python.client import device_lib  # type: ignore
+                    except Exception as exc:  # pragma: no cover - import failure already safe
+                        print(f"[TF] Unable to import device_lib: {exc}", flush=True)
+                        return None
+
+                    result: Queue = Queue()
+
+                    def _worker():
+                        try:
+                            result.put([d.name for d in device_lib.list_local_devices()])
+                        except Exception as err:
+                            result.put(err)
+
+                    thread = threading.Thread(target=_worker, daemon=True)
+                    thread.start()
+                    thread.join(timeout)
+                    if thread.is_alive():
+                        print("[TF] Skipping device enumeration due to timeout.", flush=True)
+                        return None
+
+                    if result.empty():
+                        return None
+
+                    devices = result.get()
+                    if isinstance(devices, Exception):
+                        print(f"[TF] Device enumeration failed: {devices}", flush=True)
+                        return None
+                    return devices
+
+                devices = _safe_list_tf_devices()
+                if devices:
+                    print(f"[TF] Devices: {devices}", flush=True)
                 model.summary(print_fn=lambda x: print(f"[Model] {x}", flush=True))
             except Exception:
                 pass
