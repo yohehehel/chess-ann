@@ -5,7 +5,28 @@ import pandas as pd
 import chess
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+
+# ---------------------------------------------------------------------------
+# TensorFlow configuration
+# ---------------------------------------------------------------------------
+# Streamlit executes the script in an environment where the macOS Metal backend
+# can be detected as a GPU.  TensorFlow + Metal occasionally deadlocks while
+# acquiring internal locks which surfaces in the terminal as messages like
+# "[mutex.cc : 452] RAW: Lock blocking ...".  To keep the pipeline stable we
+# explicitly disable GPU/Metal acceleration before importing TensorFlow.  This
+# forces TensorFlow to use the CPU backend which is reliable for our workload
+# and prevents the lock contention issue.
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+
 import tensorflow as tf
+
+try:
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    # If GPUs are already initialised or not present, ignore the error – the
+    # environment variable above already prevents GPU usage.
+    pass
+
 tf.config.threading.set_intra_op_parallelism_threads(1)
 tf.config.threading.set_inter_op_parallelism_threads(1)
 
